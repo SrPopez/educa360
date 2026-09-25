@@ -5,7 +5,7 @@ export default function Home() {
       <p style={{ color: 'blue' }}>
         Cambio de prueba: Integración inicial del equipo.
       </p>
-      <p style={{ color: 'red' }}>
+      <p style={{ color: 'yellow' }}>
         Cambio de prueba: Integración inicial del equipo.
       </p>
     </main>
