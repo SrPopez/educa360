@@ -35,13 +35,13 @@
   "main": "script.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PRomeroCruz/Educa360.git"
+    "url": "git+https://github.com/SrPopez/educa360.git" 
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/PRomeroCruz/Educa360/issues"
+    "url": "https://github.com/SrPopez/educa360/issues"
   },
-  "homepage": "https://github.com/PRomeroCruz/Educa360#readme"
+  "homepage": "https://github.com/SrPopez/educa360#readme"
 }
