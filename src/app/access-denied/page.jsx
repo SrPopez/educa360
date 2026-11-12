@@ -23,7 +23,7 @@ export default function AccesoDenegadoPage() {
                 
                 let rol = "paciente";
                 if (userDoc.exists()) {
-                    rol = userDoc.data().role || "paciente";++
+                    rol = userDoc.data().role || "paciente";
                 } else {
                     rol = localStorage.getItem(`rol_${user.email}`) || "paciente";
                 }
