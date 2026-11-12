@@ -1,0 +1,29 @@
+firebase init emulators --project demo-firebase (inicializar firebase en creación de emuladores con un proyecto nuevo (demo para que lo reconozca en el pc y no cloud))
+
+firebase emulators:start (inicia los emuladores)
+
+netstat -ano | grep :8080 (comprobar el estado de los puertos, grep 8080 para ver el de dicho puerto)
+
+taskkill //PID <uso del puerto> (mata el PID (escribir /F en caso de necesitar forzar)
+
+cat <<EOT > .env.example
+VITE_FIREBASE_PROJECT_ID=educa-dev
+VITE_FIREBASE_EMULATOR_PORT=8080
+VITE_USE_EMULATOR=true
+EOT  (creación .env.example con id educa-dev puerto 8080 y la condición true para que pueda pasar por el index.html)
+
+echo ".env" >> .gitignore   (escribe .env en .gitignore para que pueda pasar el archivo)
+
+git status   (presenta los cambios que hayan ocurrido)
+
+git add .env.example .gitignore index.html   (el cambio en index.html a git)
+
+git commit -m "feat: configuración de variables de entorno para emulador firebase"   (el commit con un nombre)
+
+git push origin cambio-1   (el push)
+
+Después se entra en GitHub para hacer el pull request
+
+Fijarse si .gitignore tiene registrado .env*. Quitar el asterisco para que deje pasar el .env.example
+
+también se puede añadir una exclamación tal que -> !.env.example en caso de que no tire

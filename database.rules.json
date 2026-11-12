@@ -1,0 +1,79 @@
+{
+  "rules": {
+    
+    // 1. GESTIÓN DE USUARIOS Y ACCESOS
+    "usuarios": {
+      "$uid": {
+        // Cada usuario lee su perfil; admin y profesional pueden listar/ver accesos
+        ".read": "auth != null && (auth.uid === $uid || auth.token.rol === 'admin' || auth.token.rol === 'profesional')",
+        // Solo el propio usuario (ciertos datos) o el administrador pueden editar
+        ".write": "auth != null && (auth.uid === $uid || auth.token.rol === 'admin')"
+      }
+    },
+
+    // 2. PACIENTES
+    "pacientes": {
+      "$pacienteId": {
+        ".read": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional' || auth.token.rol === 'docente' || auth.token.rol === 'estudiante' || (auth.token.rol === 'paciente' && auth.uid === $pacienteId))",
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional')"
+      }
+    },
+
+    // 3. PROFESIONALES
+    "profesionales": {
+      "$profesionalId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.rol === 'admin'"
+      }
+    },
+
+    // 4. CITAS
+    "citas": {
+      "$citaId": {
+        ".read": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional' || auth.token.rol === 'paciente')",
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional' || auth.token.rol === 'paciente')"
+      }
+    },
+
+    // 5. ACTOS CLÍNICOS
+    "actos_clinicos": {
+      "$actoId": {
+        ".read": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional' || auth.token.rol === 'docente' || auth.token.rol === 'estudiante')",
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional')"
+      }
+    },
+
+    // 6. SOLICITUDES DE PRUEBA
+    "solicitudes_prueba": {
+      "$solicitudId": {
+        ".read": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional' || auth.token.rol === 'paciente')",
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional')"
+      }
+    },
+
+    // 7. RESULTADOS
+    "resultados": {
+      "$resultadoId": {
+        ".read": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional' || auth.token.rol === 'paciente')",
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional')"
+      }
+    },
+
+    // 8. ASIGNACIONES DOCENTES
+    "asignaciones_docentes": {
+      "$asignacionId": {
+        ".read": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'docente' || auth.token.rol === 'estudiante' || auth.token.rol === 'profesional')",
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'docente')"
+      }
+    },
+
+    // 9. CONTENIDO DEL PORTAL
+    "contenido_portal": {
+      ".read": true,
+      "$contenidoId": {
+        ".write": "auth != null && (auth.token.rol === 'admin' || auth.token.rol === 'profesional')"
+      }
+    }
+
+  }
+}

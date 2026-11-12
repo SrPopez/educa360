@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function getRol() {
+      return (request.auth != null && request.auth.token != null && request.auth.token.keys().hasAll(['rol'])) 
+        ? request.auth.token.rol 
+        : '';
+    }
+
+    // 1. GESTIÓN DE USUARIOS Y ACCESOS
+    match /usuarios/{uid} {
+      // Permitir leer la lista de usuarios si está autenticado (necesario para listar médicos en citas)
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.uid == uid || 
+        getRol() == 'admin' ||
+        getRol() == 'admin_sistema'
+      );
+    }
+
+    // 2. PACIENTES
+    match /pacientes/{pacienteId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 3. PROFESIONALES
+    match /profesionales/{profesionalId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // 4. CITAS
+    match /citas/{citaId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 5. ACTOS CLÍNICOS
+    match /actos_clinicos/{actoId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 6. SOLICITUDES DE PRUEBA
+    match /solicitudes_prueba/{solicitudId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 7. RESULTADOS
+    match /resultados/{resultadoId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 8. ASIGNACIONES DOCENTES
+    match /asignaciones_docentes/{asignacionId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 9. CONTENIDO DEL PORTAL
+    match /contenido_portal/{contenidoId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // 10. AUDITORÍA
+    match /auditoria/{logId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if false;
+    }
+  }
+}
