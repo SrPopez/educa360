@@ -11,6 +11,17 @@
     },
     "singleProjectMode": true
   },
+  "hosting": [
+    {
+      "target": "educa360-dev",
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ]
+    }
+  ],
   "database": {
     "rules": "database.rules.json"
   },

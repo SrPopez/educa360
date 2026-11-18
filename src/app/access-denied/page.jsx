@@ -1,12 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebaseConfig";
+import { dashboardParaRol, inferirRolDesdeEmail } from "@/lib/roles";
 
 export default function AccessDeniedPage() {
     const router = useRouter();
 
     const handleVolverPanel = () => {
-        router.push("/paciente/dashboard");
+        const currentUser = auth.currentUser;
+        let rolDestino = "paciente";
+
+        if (currentUser && currentUser.email) {
+            rolDestino = inferirRolDesdeEmail(currentUser.email);
+        } else {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith("rol_")) {
+                    rolDestino = localStorage.getItem(key) || "paciente";
+                    break;
+                }
+            }
+        }
+
+        router.push(dashboardParaRol(rolDestino));
     };
 
     return (

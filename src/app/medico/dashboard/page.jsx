@@ -2,11 +2,11 @@
 
 import { useState, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import PortalShell from "@/components/PortalShell";
-import { Tarjeta } from "@/components/ComponentesUI";
 import { EstadoCargando } from "@/components/EstadosUI";
 import { registrarLogSistema } from "@/app/admin/dashboard/page";
 
@@ -23,6 +23,7 @@ export default function MedicoDashboardPage() {
 
     const [citasDiagnosticando, setCitasDiagnosticando] = useState({});
     const [textosDiagnostico, setTextosDiagnostico] = useState({});
+    const [textosTratamiento, setTextosTratamiento] = useState({});
 
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 800);
@@ -30,6 +31,17 @@ export default function MedicoDashboardPage() {
         try {
             const guardadas = JSON.parse(localStorage.getItem("citas_educa360") || "[]");
             setCitas(guardadas);
+            
+            const borradoresDiag = {};
+            const borradoresTrat = {};
+            guardadas.forEach(c => {
+                const borradorDiag = localStorage.getItem(`borrador_diag_${c.id}`);
+                const borradorTrat = localStorage.getItem(`borrador_trat_${c.id}`);
+                if (borradorDiag) borradoresDiag[c.id] = borradorDiag;
+                if (borradorTrat) borradoresTrat[c.id] = borradorTrat;
+            });
+            setTextosDiagnostico(borradoresDiag);
+            setTextosTratamiento(borradoresTrat);
         } catch {
             setCitas([]);
         }
@@ -43,46 +55,45 @@ export default function MedicoDashboardPage() {
     }, [authLoading]);
 
     const actualizarEstadoCita = (citaId, nuevoEstado) => {
-        const actualizadas = citas.map((c) => {
-            if (c.id === citaId) {
-                return { ...c, estado: nuevoEstado };
-            }
-            return c;
-        });
-
+        const actualizadas = citas.map((c) => c.id === citaId ? { ...c, estado: nuevoEstado } : c);
         setCitas(actualizadas);
         localStorage.setItem("citas_educa360", JSON.stringify(actualizadas));
 
-        registrarLogSistema(
-            "VALIDACIÓN",
-            user?.email || "medico@educa360.test",
-            `Consulta médica marcada como "${nuevoEstado}" para el paciente.`
-        );
-
-        setMensaje({
-            texto: `La cita ha sido marcada como: ${nuevoEstado}`,
-            tipo: nuevoEstado === "Cancelada" ? "error" : "success"
-        });
-
+        registrarLogSistema("VALIDACIÓN", user?.email || "medico@educa360.test", `Consulta marcada como "${nuevoEstado}".`);
+        setMensaje({ texto: `La cita ha sido marcada como: ${nuevoEstado}`, tipo: nuevoEstado === "Cancelada" ? "error" : "success" });
         setTimeout(() => setMensaje({ texto: "", tipo: "success" }), 4000);
     };
 
     const toggleDesplegableDiagnostico = (citaId) => {
-        setCitasDiagnosticando(prev => ({
-            ...prev,
-            [citaId]: !prev[citaId]
-        }));
+        setCitasDiagnosticando(prev => ({ ...prev, [citaId]: !prev[citaId] }));
+    };
+
+    const guardarBorrador = (cita) => {
+        const diag = textosDiagnostico[cita.id] || "";
+        const trat = textosTratamiento[cita.id] || "";
+
+        localStorage.setItem(`borrador_diag_${cita.id}`, diag);
+        localStorage.setItem(`borrador_trat_${cita.id}`, trat);
+
+        registrarLogSistema("BORRADOR", user?.email || "medico@educa360.test", `Acto clínico guardado en borrador para ${cita.userEmail}`);
+        setMensaje({ texto: "Borrador del acto clínico guardado correctamente (Privado).", tipo: "success" });
+        
+        setCitasDiagnosticando(prev => ({ ...prev, [cita.id]: false }));
+        
+        setTimeout(() => setMensaje({ texto: "", tipo: "success" }), 4000);
     };
 
     const guardarDiagnostico = (cita) => {
-        const textoDiagnostico = textosDiagnostico[cita.id];
-        if (!textoDiagnostico || !textoDiagnostico.trim()) return;
+        const diag = textosDiagnostico[cita.id] || "";
+        const trat = textosTratamiento[cita.id] || "";
+        if (!diag.trim()) return;
 
         const actualizadas = citas.map((c) => {
             if (c.id === cita.id) {
                 return { 
                     ...c, 
-                    diagnostico: textoDiagnostico.trim(),
+                    diagnostico: diag.trim(),
+                    tratamiento: trat.trim(),
                     estado: "Completada" 
                 };
             }
@@ -91,6 +102,8 @@ export default function MedicoDashboardPage() {
 
         setCitas(actualizadas);
         localStorage.setItem("citas_educa360", JSON.stringify(actualizadas));
+        localStorage.removeItem(`borrador_diag_${cita.id}`);
+        localStorage.removeItem(`borrador_trat_${cita.id}`);
 
         const historialesPaciente = JSON.parse(localStorage.getItem(`diagnosticos_${cita.userEmail}`) || "[]");
         const nuevoRegistro = {
@@ -98,23 +111,15 @@ export default function MedicoDashboardPage() {
             fecha: new Date().toISOString().split("T")[0],
             especialidad: cita.especialidad,
             medico: user?.email || cita.medico,
-            diagnostico: textoDiagnostico.trim()
+            diagnostico: diag.trim(),
+            tratamiento: trat.trim()
         };
         localStorage.setItem(`diagnosticos_${cita.userEmail}`, JSON.stringify([nuevoRegistro, ...historialesPaciente]));
 
-        registrarLogSistema(
-            "DIAGNÓSTICO",
-            user?.email || "medico@educa360.test",
-            `Diagnóstico emitido para el paciente ${cita.userEmail}: ${textoDiagnostico.trim()}`
-        );
-
-        setMensaje({
-            texto: `Diagnóstico guardado correctamente y enviado al historial clínico del paciente.`,
-            tipo: "success"
-        });
+        registrarLogSistema("DIAGNÓSTICO", user?.email || "medico@educa360.test", `Diagnóstico firmado y publicado para ${cita.userEmail}`);
+        setMensaje({ texto: "Acto clínico firmado y publicado correctamente en el expediente del paciente.", tipo: "success" });
 
         setCitasDiagnosticando(prev => ({ ...prev, [cita.id]: false }));
-        setTextosDiagnostico(prev => ({ ...prev, [cita.id]: "" }));
         setTimeout(() => setMensaje({ texto: "", tipo: "success" }), 4000);
     };
 
@@ -131,124 +136,50 @@ export default function MedicoDashboardPage() {
     };
 
     const handleCerrarSesion = async () => {
-        registrarLogSistema("AUTENTICACIÓN", user?.email || "medico@educa360.test", "Cierre de sesión seguro desde portal médico.");
         await signOut(auth);
         router.push("/login");
     };
 
     if (loading || authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-                <EstadoCargando mensaje="Cargando panel del profesional sanitario..." />
-            </div>
-        );
+        return <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]"><EstadoCargando mensaje="Cargando panel médico..." /></div>;
     }
 
     const emailMedicoActual = (user?.email || "").toLowerCase();
-
     const citasDelMedicoAceptadas = citas.filter((c) => {
         const medicoCita = (c.medico || "").toLowerCase();
         const estadoCita = (c.estado || "").toLowerCase();
-
-        const esDelMedico = medicoCita === emailMedicoActual || medicoCita.includes("medico");
-        const esAceptada = estadoCita === "aceptada" || estadoCita === "confirmada";
-
-        return esDelMedico && esAceptada;
+        return (!medicoCita || medicoCita === emailMedicoActual || medicoCita.includes("medico")) && (estadoCita === "aceptada" || estadoCita === "confirmada");
     });
 
     return (
-        <PortalShell
-            rolLabel="Portal Médico"
-            rolTipo="medico"
-            usuarioNombre="Personal Sanitario"
-            usuarioEmail={user?.email || "medico@educa360.test"}
-            onLogout={handleCerrarSesion}
-        >
+        <PortalShell rolLabel="Portal Médico" rolTipo="medico" usuarioNombre="Personal Sanitario" usuarioEmail={user?.email || "medico@educa360.test"} onLogout={handleCerrarSesion}>
             <div className="space-y-6 max-w-7xl mx-auto pb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200">
-                                Área Clínica Asistencial
-                            </span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-500 bg-slate-100">
-                                TLS 1.3 Seguro
-                            </span>
-                        </div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 pt-1">
-                            Panel de Consultas y Pacientes
-                        </h1>
-                        <p className="text-xs text-slate-500">
-                            Gestión de agenda activa, historiales médicos y emisión de diagnósticos certificados.
-                        </p>
+                    <div>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200">Área Clínica Asistencial</span>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 pt-1">Panel de Consultas y Pacientes</h1>
+                        <p className="text-xs text-slate-500">Gestión de agenda activa, actos clínicos en borrador y emisión de diagnósticos certificados.</p>
                     </div>
+                    <Link href="/medico/profile" className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer">
+                        Mi Ficha Profesional
+                    </Link>
                 </div>
 
                 {mensaje.texto && (
-                    <div className={`p-4 rounded-2xl border text-xs font-medium flex items-center space-x-3 shadow-xs transition-all ${
-                        mensaje.tipo === "success" 
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
-                            : "bg-rose-50 border-rose-200 text-rose-800"
-                    }`}>
-                        <div className={`w-6 h-6 rounded-xl flex items-center justify-center font-bold shrink-0 ${
-                            mensaje.tipo === "success" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                        }`}>
-                            {mensaje.tipo === "success" ? "✓" : "!"}
-                        </div>
+                    <div className={`p-4 rounded-2xl border text-xs font-medium flex items-center space-x-3 shadow-xs ${mensaje.tipo === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800"}`}>
                         <span>{mensaje.texto}</span>
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-bl-full -z-0 opacity-60"></div>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold relative z-10">Citas Aceptadas</span>
-                        <p className="text-3xl font-extrabold text-slate-900 relative z-10">{citasDelMedicoAceptadas.length}</p>
-                        <p className="text-[11px] text-teal-700 font-medium relative z-10">Sincronizadas en tiempo real</p>
-                    </div>
-                    
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-0 opacity-60"></div>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold relative z-10">Estado de Seguridad</span>
-                        <div className="flex items-center gap-2 pt-0.5 relative z-10">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <p className="text-xl font-bold text-emerald-700">2FA Activo</p>
-                        </div>
-                        <p className="text-[11px] text-slate-500 relative z-10">Cumplimiento ISO-27001</p>
-                    </div>
-
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0 opacity-60"></div>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold relative z-10">Sede Asignada</span>
-                        <p className="text-base font-bold text-slate-900 truncate relative z-10 pt-0.5">Centro Sanitario Centro</p>
-                        <p className="text-[11px] text-slate-500 relative z-10">Madrid · España</p>
-                    </div>
-                </div>
-
                 <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-                    <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                                Agenda Activa · Consultas Aceptadas
-                            </h2>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Listado exclusivo de citas confirmadas con opción de desplegar el panel de diagnóstico clínico.
-                            </p>
-                        </div>
+                    <div className="p-6 border-b border-slate-100">
+                        <h2 className="text-base font-bold text-slate-900 tracking-tight">Agenda Activa · Consultas Confirmadas</h2>
                     </div>
 
                     <div className="overflow-x-auto">
                         {citasDelMedicoAceptadas.length === 0 ? (
                             <div className="py-16 text-center space-y-2">
-                                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </div>
-                                <p className="text-xs font-bold text-slate-700">No hay consultas aceptadas pendientes</p>
-                                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                                    Las nuevas citas aceptadas aparecerán automáticamente en esta sección.
-                                </p>
+                                <p className="text-xs font-bold text-slate-700">No hay consultas confirmadas pendientes</p>
                             </div>
                         ) : (
                             <table className="w-full text-left border-collapse text-xs">
@@ -257,113 +188,73 @@ export default function MedicoDashboardPage() {
                                         <th className="py-3 px-6 font-semibold">Paciente</th>
                                         <th className="py-3 px-4 font-semibold">Especialidad</th>
                                         <th className="py-3 px-4 font-semibold">Fecha y Hora</th>
-                                        <th className="py-3 px-4 font-semibold">Motivo de Consulta</th>
+                                        <th className="py-3 px-4 font-semibold">Motivo</th>
                                         <th className="py-3 px-4 font-semibold">Estado</th>
-                                        <th className="py-3 px-6 font-semibold text-right">Acciones Clínicas</th>
+                                        <th className="py-3 px-6 font-semibold text-right">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {citasDelMedicoAceptadas.map((cita) => {
                                         const estaDiagnosticando = citasDiagnosticando[cita.id];
+                                        const tieneBorrador = Boolean(localStorage.getItem(`borrador_diag_${cita.id}`));
 
                                         return (
                                             <Fragment key={cita.id}>
                                                 <tr className="hover:bg-slate-50/50 transition align-top">
-                                                    <td className="py-4 px-6">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
-                                                                {(cita.userEmail || "P").charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-bold text-slate-900 block truncate max-w-[180px]">
-                                                                    {cita.userEmail}
-                                                                </span>
-                                                                <span className="text-[10px] font-mono text-slate-400">Paciente Verificado</span>
-                                                            </div>
-                                                        </div>
+                                                    <td className="py-4 px-6 font-bold text-slate-900">{cita.userEmail}</td>
+                                                    <td className="py-4 px-4 text-slate-700">{cita.especialidad}</td>
+                                                    <td className="py-4 px-4 font-mono">{cita.fecha} {cita.hora}</td>
+                                                    <td className="py-4 px-4 text-slate-600">
+                                                        {cita.motivo}
+                                                        {tieneBorrador && <span className="block mt-1 text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200 font-bold w-fit">Borrador Guardado</span>}
                                                     </td>
-
-                                                    <td className="py-4 px-4 text-slate-700 font-medium">
-                                                        {cita.especialidad}
-                                                    </td>
-
-                                                    <td className="py-4 px-4 whitespace-nowrap">
-                                                        <div className="font-mono text-slate-800 font-semibold">{cita.fecha}</div>
-                                                        <div className="font-mono text-teal-700 text-[11px]">{cita.hora}</div>
-                                                    </td>
-
-                                                    <td className="py-4 px-4 text-slate-600 max-w-[220px]">
-                                                        {cita.motivo || "Sin observaciones"}
-                                                    </td>
-
-                                                    <td className="py-4 px-4 whitespace-nowrap">
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                                                            {cita.estado}
-                                                        </span>
-                                                    </td>
-
-                                                    <td className="py-4 px-6 text-right whitespace-nowrap space-x-2">
-                                                        <button
-                                                            onClick={() => toggleDesplegableDiagnostico(cita.id)}
-                                                            className={`px-3 py-2 font-bold text-xs rounded-xl transition cursor-pointer shadow-xs ${
-                                                                estaDiagnosticando 
-                                                                    ? "bg-teal-700 text-white shadow-teal-700/20" 
-                                                                    : "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/20"
-                                                            }`}
-                                                        >
-                                                            {estaDiagnosticando ? "Cerrar Panel" : "Diagnosticar"}
+                                                    <td className="py-4 px-4"><span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">CONFIRMADA</span></td>
+                                                    <td className="py-4 px-6 text-right space-x-2">
+                                                        <button onClick={() => toggleDesplegableDiagnostico(cita.id)} className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl transition cursor-pointer">
+                                                            {estaDiagnosticando ? "Cerrar Panel" : "Atender"}
                                                         </button>
-                                                        <button
-                                                            onClick={() => abrirModalAnular(cita)}
-                                                            className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition cursor-pointer shadow-xs"
-                                                        >
-                                                            Anular
-                                                        </button>
+                                                        <button onClick={() => abrirModalAnular(cita)} className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition cursor-pointer">Anular</button>
                                                     </td>
                                                 </tr>
 
                                                 {estaDiagnosticando && (
                                                     <tr className="bg-teal-50/40 border-b border-teal-100">
                                                         <td colSpan={6} className="p-5 px-6">
-                                                            <div className="bg-white p-5 rounded-2xl border border-teal-200 shadow-sm space-y-3">
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-xs font-bold text-teal-900 flex items-center gap-2">
-                                                                        <span className="w-2 h-2 rounded-full bg-teal-600"></span>
-                                                                        Emisión de Dictamen y Diagnóstico Clínico
-                                                                    </span>
-                                                                    <span className="text-[10px] font-mono text-slate-400">Paciente: {cita.userEmail}</span>
-                                                                </div>
-
-                                                                {cita.diagnostico && (
-                                                                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900">
-                                                                        <strong>Último diagnóstico guardado:</strong> {cita.diagnostico}
-                                                                    </div>
-                                                                )}
-
-                                                                <div className="space-y-1.5">
+                                                            <div className="bg-white p-5 rounded-2xl border border-teal-200 shadow-sm space-y-4">
+                                                                <span className="text-xs font-bold text-teal-900 block">Registro de Acto Clínico (Borrador Privado)</span>
+                                                                
+                                                                <div className="space-y-1">
+                                                                    <label className="text-[11px] font-bold text-slate-700">Motivo, Exploración y Valoración Clínica</label>
                                                                     <textarea
                                                                         rows={3}
-                                                                        placeholder="Escriba aquí el diagnóstico detallado, observaciones y pautas de tratamiento..."
+                                                                        placeholder="Escriba la exploración y valoración..."
                                                                         value={textosDiagnostico[cita.id] || ""}
                                                                         onChange={(e) => setTextosDiagnostico({ ...textosDiagnostico, [cita.id]: e.target.value })}
-                                                                        className="w-full p-3 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 transition"
+                                                                        className="w-full p-3 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-teal-600"
                                                                     />
                                                                 </div>
 
-                                                                <div className="flex justify-end gap-2">
-                                                                    <button
-                                                                        onClick={() => toggleDesplegableDiagnostico(cita.id)}
-                                                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer border border-slate-200"
-                                                                    >
-                                                                        Cancelar
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => guardarDiagnostico(cita)}
-                                                                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition cursor-pointer shadow-md shadow-emerald-600/20"
-                                                                    >
-                                                                        Guardar y Enviar Diagnóstico
-                                                                    </button>
+                                                                <div className="space-y-1">
+                                                                    <label className="text-[11px] font-bold text-slate-700">Plan / Tratamiento Prescrito</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Ej: Paracetamol 1g cada 8h durante 5 días"
+                                                                        value={textosTratamiento[cita.id] || ""}
+                                                                        onChange={(e) => setTextosTratamiento({ ...textosTratamiento, [cita.id]: e.target.value })}
+                                                                        className="w-full p-3 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-teal-600"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                                                                    <span className="text-[11px] text-slate-500 font-mono">Los borradores solo son visibles para el profesional sanitario.</span>
+                                                                    <div className="flex gap-2">
+                                                                        <button onClick={() => guardarBorrador(cita)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 cursor-pointer">
+                                                                            Guardar Borrador
+                                                                        </button>
+                                                                        <button onClick={() => guardarDiagnostico(cita)} className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl transition shadow-md cursor-pointer">
+                                                                            Firmar y Publicar al Paciente
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -390,13 +281,16 @@ export default function MedicoDashboardPage() {
 
                             <div className="space-y-2">
                                 <span className="inline-block text-[10px] font-mono uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-3 py-0.5 rounded-md font-bold">
-                                    Acción Crítica
+                                    Acción Crítica · Registro Clínico
                                 </span>
                                 <h3 className="text-lg font-bold text-slate-900 tracking-tight pt-1">
-                                    ¿Desea anular esta consulta médica aceptada?
+                                    ¿Desea anular esta consulta médica confirmada?
                                 </h3>
                                 <p className="text-xs text-slate-500 leading-relaxed px-2">
-                                    Está a punto de anular la cita del paciente <strong className="text-slate-700">{citaParaAnular.userEmail}</strong> programada para el <strong className="text-slate-700">{citaParaAnular.fecha}</strong> a las <strong className="text-slate-700">{citaParaAnular.hora}</strong>.
+                                    Está a punto de cancelar la cita del paciente <strong className="text-slate-800">{citaParaAnular.userEmail}</strong> ({citaParaAnular.especialidad}) programada para el <strong className="text-slate-800">{citaParaAnular.fecha}</strong> a las <strong className="text-slate-800">{citaParaAnular.hora}</strong>.
+                                </p>
+                                <p className="text-[11px] text-rose-600/90 font-medium pt-1">
+                                    Esta acción quedará registrada en la auditoría y eliminará cualquier borrador pendiente.
                                 </p>
                             </div>
 

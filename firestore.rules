@@ -10,7 +10,6 @@ service cloud.firestore {
 
     // 1. GESTIÓN DE USUARIOS Y ACCESOS
     match /usuarios/{uid} {
-      // Permitir leer la lista de usuarios si está autenticado (necesario para listar médicos en citas)
       allow read: if request.auth != null;
       allow write: if request.auth != null && (
         request.auth.uid == uid || 
@@ -24,10 +23,36 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // 3. PROFESIONALES
-    match /profesionales/{profesionalId} {
+    // 3. PROFESIONALES Y SEDES
+    match /profesionales_publicos/{profesionalId} {
+      allow read: if true;
+      allow write: if request.auth != null && (getRol() in ['admin', 'admin_sistema']);
+    }
+
+    match /profesionales_internos/{profesionalId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && (getRol() in ['admin', 'admin_sistema', 'profesional', 'profesional_sanitario']);
+    }
+
+    match /disponibilidad_sedes/{dispoId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (getRol() in ['admin', 'admin_sistema', 'profesional', 'profesional_sanitario']);
+    }
+
+    // NUEVO: Bloqueos de agenda (Vacaciones, festivos y cierres parciales)
+    match /bloqueos_agenda/{bloqueoId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (getRol() in ['admin', 'admin_sistema', 'profesional', 'profesional_sanitario']);
+    }
+
+    match /sedes/{sedeId} {
+      allow read: if true;
+      allow write: if request.auth != null && (getRol() in ['admin', 'admin_sistema']);
+    }
+
+    match /servicios/{servicioId} {
+      allow read: if true;
+      allow write: if request.auth != null && (getRol() in ['admin', 'admin_sistema']);
     }
 
     // 4. CITAS
@@ -38,8 +63,8 @@ service cloud.firestore {
     // 5. ACTOS CLÍNICOS
     match /actos_clinicos/{actoId} {
       allow read: if request.auth != null;
-      allow create: if getRol() == 'profesional';
-      allow update: if getRol() in ['admin', 'profesional'];
+      allow create: if getRol() in ['profesional', 'profesional_sanitario'];
+      allow update: if getRol() in ['admin', 'profesional', 'profesional_sanitario'];
       allow delete: if false;
     }
 
@@ -61,17 +86,22 @@ service cloud.firestore {
     // 9. CONTENIDO DEL PORTAL
     match /contenido_portal/{contenidoId} {
       allow read: if true;
-      allow write: if getRol() in ['admin', 'admin_sistema', 'editor'];
+      allow write: if getRol() in ['admin', 'admin_sistema', 'editor', 'editor_contenidos'];
     }
 
     // 10. AUDITORÍA
     match /auditoria/{logId} {
       allow read: if request.auth != null && (
         resource.data.paciente_id == request.auth.uid ||
-        getRol() in ['admin', 'admin_sistema', 'profesional']
+        getRol() in ['admin', 'admin_sistema', 'profesional', 'profesional_sanitario']
       );
       allow create: if request.auth != null && request.resource.data.usuario_id == request.auth.uid;
       allow update, delete: if false;
     }
+
+    match /{document=**} {
+      allow read: if request.auth != null;
+    }
+
   }
 }

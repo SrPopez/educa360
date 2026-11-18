@@ -1,8 +1,14 @@
 {
   "projects": {
-    "educa360-dev": "educa360-dev",
     "default": "educa360-dev"
   },
-  "targets": {},
-  "etags": {}
+  "targets": {
+    "educa360-dev": {
+      "hosting": {
+        "educa360-dev": [
+          "educa360-dev"
+        ]
+      }
+    }
+  }
 }

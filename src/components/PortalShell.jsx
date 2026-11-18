@@ -13,6 +13,7 @@ export default function PortalShell({
 }) {
     const pathname = usePathname();
     const [menuAbierto, setMenuAbierto] = useState(true);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const emailLower = (usuarioEmail || "").toLowerCase();
     const roleLower = (rolTipo || "").toLowerCase();
@@ -27,20 +28,67 @@ export default function PortalShell({
 
     return (
         <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col md:flex-row antialiased selection:bg-teal-600 selection:text-white">
-            <aside className="w-full md:w-72 bg-[#090d16] border-r border-slate-800/80 flex flex-col justify-between shrink-0 md:sticky md:top-0 md:h-screen z-30 shadow-2xl relative overflow-hidden">
+            
+            <div className="flex md:hidden items-center justify-between bg-[#090d16] text-white px-4 py-3 border-b border-slate-800 sticky top-0 z-40 shadow-md">
+                <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-lg bg-teal-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-teal-900/50">
+                        E
+                    </div>
+                    <div>
+                        <h1 className="text-xs font-semibold text-white tracking-wide">Educa360</h1>
+                        <p className="text-[11px] text-slate-400">Portal Clínico y Docente</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="p-2 rounded-lg bg-slate-800/80 text-teal-400 hover:bg-slate-700 transition focus:outline-none cursor-pointer"
+                    aria-label="Menú de navegación"
+                >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {mobileMenuOpen ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                        )}
+                    </svg>
+                </button>
+            </div>
+
+            {mobileMenuOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setMobileMenuOpen(false)}
+                />
+            )}
+
+            <aside className={`
+                fixed inset-y-0 left-0 z-50 w-72 bg-[#090d16] border-r border-slate-800/80 flex flex-col justify-between shrink-0 shadow-2xl overflow-hidden transition-transform duration-300 ease-in-out
+                md:translate-x-0 md:sticky md:top-0 md:h-screen md:z-30
+                ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+            `}>
                 
                 <div className="absolute -top-24 -left-24 w-80 h-80 bg-teal-600/15 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute -top-12 -left-12 w-56 h-56 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
 
                 <div className="overflow-y-auto flex-1 relative z-10">
-                    <div className="p-5 border-b border-slate-800/80 flex items-center space-x-3 bg-transparent">
-                        <div className="w-8 h-8 rounded-lg bg-teal-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-teal-900/50">
-                            E
+                    <div className="p-5 border-b border-slate-800/80 flex items-center justify-between bg-transparent">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-lg bg-teal-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-teal-900/50">
+                                E
+                            </div>
+                            <div>
+                                <h1 className="text-xs font-semibold text-white tracking-wide">Educa360</h1>
+                                <p className="text-[11px] text-slate-400">Portal Clínico y Docente</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-xs font-semibold text-white tracking-wide">Educa360</h1>
-                            <p className="text-[11px] text-slate-400">Portal Clínico y Docente</p>
-                        </div>
+                        <button 
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="md:hidden text-slate-400 hover:text-white p-1 cursor-pointer"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
                     <nav className="p-3 space-y-1">
@@ -59,6 +107,7 @@ export default function PortalShell({
                                     
                                     <a
                                         href="/admin/dashboard"
+                                        onClick={() => setMobileMenuOpen(false)}
                                         className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
                                             pathname === "/admin/dashboard"
                                                 ? "bg-teal-600/20 text-teal-300 border border-teal-500/30"
@@ -73,6 +122,7 @@ export default function PortalShell({
 
                                     <a
                                         href="/admin-general/dashboard"
+                                        onClick={() => setMobileMenuOpen(false)}
                                         className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
                                             pathname === "/admin-general/dashboard"
                                                 ? "bg-teal-600/20 text-teal-300 border border-teal-500/30"
@@ -84,22 +134,37 @@ export default function PortalShell({
                                         </svg>
                                         <span>Validación de Citas (General)</span>
                                     </a>
+
+                                    <a
+                                        href="/admin/disponibilidad"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
+                                            pathname === "/admin/disponibilidad"
+                                                ? "bg-teal-600/20 text-teal-300 border border-teal-500/30"
+                                                : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>Disponibilidad y Sede</span>
+                                    </a>
                                 </div>
 
                                 <div className="pt-2 border-t border-slate-800/80 space-y-1">
                                     <span className="px-3 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
                                         Supervisión de Portales
                                     </span>
-                                    <a href="/medico/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                                    <a href="/medico/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
                                         <span>• Portal Médico (Consultas)</span>
                                     </a>
-                                    <a href="/paciente/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                                    <a href="/paciente/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
                                         <span>• Portal Paciente (Historial)</span>
                                     </a>
-                                    <a href="/editor/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                                    <a href="/editor/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
                                         <span>• Gestión Documental (Editor)</span>
                                     </a>
-                                    <a href="/alumno/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                                    <a href="/alumno/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
                                         <span>• Formación Clínica (Alumno)</span>
                                     </a>
                                 </div>
@@ -125,7 +190,7 @@ export default function PortalShell({
 
                                 {menuAbierto && (
                                     <div className="pl-7 space-y-1 border-l border-slate-800 ml-4 my-1">
-                                        <a href="/alumno/dashboard" className={`block py-2 px-3 rounded-lg text-xs transition leading-relaxed ${pathname?.includes("/alumno") ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
+                                        <a href="/alumno/dashboard" onClick={() => setMobileMenuOpen(false)} className={`block py-2 px-3 rounded-lg text-xs transition leading-relaxed ${pathname?.includes("/alumno") ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
                                             • Casos Clínicos de Estudio
                                         </a>
                                     </div>
@@ -154,12 +219,14 @@ export default function PortalShell({
                                     <div className="pl-7 space-y-1 border-l border-slate-800 ml-4 my-1">
                                         <a 
                                             href="/editor/dashboard" 
+                                            onClick={() => setMobileMenuOpen(false)}
                                             className={`block py-2 px-3 rounded-lg text-xs transition leading-relaxed ${pathname === "/editor/dashboard" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}
                                         >
                                             • Editor de Guías y Recursos
                                         </a>
                                         <a 
                                             href="/editor/historial" 
+                                            onClick={() => setMobileMenuOpen(false)}
                                             className={`block py-2 px-3 rounded-lg text-xs transition leading-relaxed ${pathname === "/editor/historial" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}
                                         >
                                             • Historial de Publicaciones
@@ -188,14 +255,17 @@ export default function PortalShell({
 
                                 {menuAbierto && (
                                     <div className="pl-7 space-y-1 border-l border-slate-800 ml-4 my-1">
-                                        <a href="/paciente/dashboard" className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/dashboard" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
+                                        <a href="/paciente/dashboard" onClick={() => setMobileMenuOpen(false)} className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/dashboard" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
                                             • Historial de Citas
                                         </a>
-                                        <a href="/paciente/pedir-cita" className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/pedir-cita" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
+                                        <a href="/paciente/pedir-cita" onClick={() => setMobileMenuOpen(false)} className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/pedir-cita" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
                                             • Pedir Cita Médica
                                         </a>
-                                        <a href="/paciente/diagnosticos" className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/diagnosticos" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
+                                        <a href="/paciente/diagnosticos" onClick={() => setMobileMenuOpen(false)} className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/diagnosticos" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
                                             • Ver Diagnósticos
+                                        </a>
+                                        <a href="/paciente/profile" onClick={() => setMobileMenuOpen(false)} className={`block py-1.5 px-3 rounded-lg text-xs transition ${pathname === "/paciente/profile" ? "bg-teal-600/20 text-teal-300 font-semibold border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/40"}`}>
+                                            • Mi Perfil
                                         </a>
                                     </div>
                                 )}
@@ -203,7 +273,7 @@ export default function PortalShell({
                         )}
 
                         {esMedico && !esAdmin && (
-                            <a href="/medico/dashboard" className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${pathname?.includes("/medico") ? "bg-teal-600/20 text-teal-300 border border-teal-500/30" : "text-slate-300 hover:bg-slate-800/60 hover:text-white"}`}>
+                            <a href="/medico/dashboard" onClick={() => setMobileMenuOpen(false)} className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${pathname?.includes("/medico") ? "bg-teal-600/20 text-teal-300 border border-teal-500/30" : "text-slate-300 hover:bg-slate-800/60 hover:text-white"}`}>
                                 <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>

@@ -1,6 +1,6 @@
 /**
  * Datos de prueba totalmente ficticios para Educa360.
- * Ejecutar solo contra emuladores locales. Nunca contiene información real.
+ * Ejecutar solo contra emuladores locales. Ningún dato clínico es real.
  */
 
 import { getUserUidsByEmail, USERS } from "./seed-usuarios.js";
@@ -83,7 +83,198 @@ const offset = (days, hours = 0) => {
     return d.toISOString();
 };
 
+export const PROFESIONALES_MEDICOS = [
+    {
+        email: "medico@educa360.test",
+        publico: {
+            nombre: "Dra. Laura Martínez",
+            especialidad: "Medicina General",
+            sede: "Centro Sanitario Centro · Madrid",
+            bio: "Especialista en atención primaria, medicina preventiva y seguimiento clínico integral de pacientes.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812341",
+            telefonoPrivado: "+34600111002",
+            especialidad: "Medicina General",
+            sede: "Centro Sanitario Centro · Madrid",
+            notasAdministrativas: "Horario de 09:00 a 13:00 y de 16:00 a 21:00. Reunión clínica los martes a las 14:00.",
+        }
+    },
+    {
+        email: "medico2@educa360.test",
+        publico: {
+            nombre: "Dr. Fernando José Martínez de la Torre y Gálvez",
+            especialidad: "Cardiología",
+            sede: "Centro Sanitario Centro · Madrid",
+            bio: "Diagnóstico cardiovascular no invasivo, ecocardiografía avanzada y prevención de riesgo coronario.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812342",
+            telefonoPrivado: "+34600111011",
+            especialidad: "Cardiología",
+            sede: "Centro Sanitario Centro · Madrid",
+            notasAdministrativas: "Consultas de cardiología y pruebas de esfuerzo los lunes y jueves.",
+        }
+    },
+    {
+        email: "medico3@educa360.test",
+        publico: {
+            nombre: "Dra. Elena Ruiz-Sánchez",
+            especialidad: "Dermatología",
+            sede: "Sede Norte · Madrid",
+            bio: "Dermatología clínica, detección precoz de lesiones cutáneas y tratamientos dermatológicos avanzados.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812341",
+            telefonoPrivado: "+34600111002",
+            especialidad: "Medicina General",
+            sede: "Centro Sanitario Centro · Madrid",
+            notasAdministrativas: "Horario de 09:00 a 13:00 y de 16:00 a 21:00. Reunión clínica los martes.",
+        }
+    },
+    {
+        email: "medico4@educa360.test",
+        publico: {
+            nombre: "Dr. Mario Gómez-Ñuñez",
+            especialidad: "Pediatría",
+            sede: "Sede Oeste · Madrid",
+            bio: "Pediatría general, control de desarrollo infantil, vacunación y seguimiento del lactante.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812344",
+            telefonoPrivado: "+34600111013",
+            especialidad: "Pediatría",
+            sede: "Sede Oeste · Madrid",
+            notasAdministrativas: "Atención pediátrica continuada en turno de mañana.",
+        }
+    },
+    {
+        email: "medico5@educa360.test",
+        publico: {
+            nombre: "Dra. Isabel O'Brien",
+            especialidad: "Ginecología",
+            sede: "Centro Sanitario Centro · Madrid",
+            bio: "Salud de la mujer, obstetricia, control gestacional y prevención ginecológica integral.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812345",
+            telefonoPrivado: "+34600111014",
+            especialidad: "Ginecología",
+            sede: "Centro Sanitario Centro · Madrid",
+            notasAdministrativas: "Coordinación de ecografía obstétrica los viernes.",
+        }
+    },
+    {
+        email: "medico6@educa360.test",
+        publico: {
+            nombre: "Dr. Hugo Váldez",
+            especialidad: "Traumatología",
+            sede: "Sede Norte · Madrid",
+            bio: "Cirugía ortopédica, lesiones deportivas, artroscopia y rehabilitación traumatológica.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812346",
+            telefonoPrivado: "+34600111015",
+            especialidad: "Traumatología",
+            sede: "Sede Norte · Madrid",
+            notasAdministrativas: "Quirófano programado martes y viernes por la tarde.",
+        }
+    },
+    {
+        email: "medico7@educa360.test",
+        publico: {
+            nombre: "Dra. Sara Pérez-López",
+            especialidad: "Oftalmología",
+            sede: "Sede Oeste · Madrid",
+            bio: "Salud ocular, graduación avanzada, fondo de ojo y diagnóstico de patologías de la visión.",
+            disponible: true,
+        },
+        interno: {
+            numeroColegiado: "282812347",
+            telefonoPrivado: "+34600111016",
+            especialidad: "Oftalmología",
+            sede: "Sede Oeste · Madrid",
+            notasAdministrativas: "Consulta monográfica de glaucoma los miércoles.",
+        }
+    }
+];
+
+export async function seedProfesionalesMedicos(services) {
+    const { firestoreAdmin } = services;
+
+    for (const prof of PROFESIONALES_MEDICOS) {
+        const docId = prof.email.split("@")[0];
+
+        await firestoreAdmin.collection("profesionales_publicos").doc(docId).set(prof.publico, { merge: true });
+        await firestoreAdmin.collection("profesionales_internos").doc(docId).set(prof.interno, { merge: true });
+
+        console.info(`[seed] Profesional sincronizado: ${prof.publico.nombre} (${prof.email})`);
+    }
+
+    console.info("[seed] Todos los perfiles profesionales (públicos e internos) han sido inyectados correctamente.");
+}
+
+export async function seedDisponibilidadProfesionales(services) {
+    const { firestoreAdmin } = services;
+
+    const disponibilidades = [
+        {
+            id: "disp-medico-centro",
+            profesionalId: "medico",
+            sedeId: IDS.sedeCentro,
+            horarios: [
+                {
+                    dia: "Lunes",
+                    franjas: [
+                        { inicio: "09:00", fin: "13:00", duracionCitaMinutos: 20 },
+                        { inicio: "16:00", fin: "21:00", duracionCitaMinutos: 20 }
+                    ]
+                },
+                {
+                    dia: "Martes",
+                    franjas: [
+                        { inicio: "09:00", fin: "13:00", duracionCitaMinutos: 20 },
+                        { inicio: "16:00", fin: "21:00", duracionCitaMinutos: 20 }
+                    ]
+                },
+                {
+                    dia: "Miércoles",
+                    franjas: [
+                        { inicio: "09:00", fin: "13:00", duracionCitaMinutos: 20 },
+                        { inicio: "16:00", fin: "21:00", duracionCitaMinutos: 20 }
+                    ]
+                },
+                {
+                    dia: "Jueves",
+                    franjas: [
+                        { inicio: "09:00", fin: "13:00", duracionCitaMinutos: 20 },
+                        { inicio: "16:00", fin: "21:00", duracionCitaMinutos: 20 }
+                    ]
+                },
+                {
+                    dia: "Viernes",
+                    franjas: [
+                        { inicio: "09:00", fin: "13:00", duracionCitaMinutos: 20 }
+                    ]
+                }
+            ]
+        }
+    ];
+
+    for (const disp of disponibilidades) {
+        await firestoreAdmin.collection("disponibilidad_sedes").doc(disp.id).set(disp, { merge: true });
+    }
+    console.info("[seed] Plantillas de disponibilidad por profesional y sede cargadas correctamente.");
+}
+
 export async function seedTestData({ authAdmin, firestoreAdmin }) {
+    const services = { authAdmin, firestoreAdmin };
     const uids = await getUserUidsByEmail(authAdmin);
 
     const uid = (email) => {
@@ -97,7 +288,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     const uidPaciente = uid("paciente@educa360.test");
     const uidAlumno = uid("alumno@educa360.test");
 
-    // 1. SEDES (solo emulador)
     const sedes = [
         { id: IDS.sedeNorte, nombre: "Centro Sanitario Educa360 Norte", direccion: "Calle Ficticia, 123, 28001 Madrid", telefono: "+34900111001" },
         { id: IDS.sedeSur, nombre: "Centro Sanitario Educa360 Sur", direccion: "Avenida del Prado, 45, 28014 Madrid", telefono: "+34900111002" },
@@ -108,7 +298,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${sedes.length} sedes creadas.`);
 
-    // 2. SERVICIOS (solo emulador)
     const servicios = [
         { id: IDS.servicioMedicinaGeneral, nombre: "Medicina General", descripcion: "Atención primaria y revisiones generales.", sedeId: IDS.sedeCentro },
         { id: IDS.servicioPediatria, nombre: "Pediatría", descripcion: "Consulta infantil y control de crecimiento.", sedeId: IDS.sedeNorte },
@@ -120,7 +309,9 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${servicios.length} servicios creados.`);
 
-    // 3. PROFESIONALES
+    await seedProfesionalesMedicos(services);
+    await seedDisponibilidadProfesionales(services);
+
     const profesionales = [
         {
             id: IDS.profesionalLaura,
@@ -148,9 +339,8 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     for (const p of profesionales) {
         await firestoreAdmin.collection("profesionales").doc(p.id).set(p);
     }
-    console.info(`[seed] ${profesionales.length} profesionales creados.`);
+    console.info(`[seed] ${profesionales.length} profesionales base creados.`);
 
-    // 4. PACIENTES
     const pacientes = [
         {
             id: IDS.pacienteMaria,
@@ -161,6 +351,8 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
             telefono: "+34600111004",
             fecha_nacimiento: "1985-03-12",
             direccion: "Calle del Lago, 10, 28001 Madrid",
+            contactoEmergencia: "Familiar Autorizado (600 111 222)",
+            grupoSanguineo: "A+",
             notas: "Alergia al látex.",
         },
         {
@@ -172,6 +364,8 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
             telefono: "+34600222002",
             fecha_nacimiento: "1990-07-23",
             direccion: "Avenida de la Constitución, 88, 28004 Madrid",
+            contactoEmergencia: "Familiar Autorizado (600 111 222)",
+            grupoSanguineo: "0+",
             notas: "Nombre largo con acentos y eñe para pruebas de interfaz.",
         },
         {
@@ -183,6 +377,8 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
             telefono: "+34600333003",
             fecha_nacimiento: "1978-11-05",
             direccion: "Paseo del Príncipe, 21, 28008 Madrid",
+            contactoEmergencia: "Familiar Autorizado (600 111 222)",
+            grupoSanguineo: "B+",
             notas: "Apellido con apóstrofo y carácter especial (Æ).",
         },
         {
@@ -194,6 +390,8 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
             telefono: "+34600444004",
             fecha_nacimiento: "1995-01-30",
             direccion: "Calle Ancha, 5, 28012 Madrid",
+            contactoEmergencia: "Familiar Autorizado (600 111 222)",
+            grupoSanguineo: "AB+",
             notas: "Paciente registrado sin citas previas.",
         },
     ];
@@ -202,7 +400,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${pacientes.length} pacientes creados.`);
 
-    // 5. CITAS
     const citas = [
         {
             id: IDS.citaPendiente,
@@ -270,7 +467,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${citas.length} citas creadas.`);
 
-    // 6. ACTOS CLÍNICOS
     const actos = [
         {
             id: IDS.actoBorrador1,
@@ -308,7 +504,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${actos.length} actos clínicos creados.`);
 
-    // 7. SOLICITUDES DE PRUEBA + RESULTADOS
     const solicitudes = [
         {
             id: IDS.solicitudAnalitica,
@@ -359,7 +554,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${resultados.length} resultados creados.`);
 
-    // 8. CASOS DE PRÁCTICA + ASIGNACIONES DOCENTES
     const casos = [
         {
             id: IDS.casoFractura,
@@ -408,7 +602,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${asignaciones.length} asignaciones docentes creadas.`);
 
-    // 9. CONTENIDO DEL PORTAL
     await firestoreAdmin.collection("contenido_portal").doc(IDS.contenidoBanner).set({
         titulo: "Entorno de pruebas Educa360",
         cuerpo: "Este es un entorno local con datos ficticios. Ningún dato clínico es real.",
@@ -418,7 +611,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     });
     console.info("[seed] 1 contenido del portal creado.");
 
-    // 10. AUDITORÍA
     const auditoria = [
         {
             id: IDS.auditoriaLoginAdmin,
@@ -453,7 +645,6 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
     }
     console.info(`[seed] ${auditoria.length} registros de auditoría creados.`);
 
-    // 11. PERFILES EXTENDIDOS PARA USUARIOS ADICIONALES
     let perfilesCreados = 0;
     const usuariosConPerfil = USERS.filter((u) => !DOCS_EXCLUIDOS_DE_PERFIL.has(u.email));
 
@@ -469,28 +660,16 @@ export async function seedTestData({ authAdmin, firestoreAdmin }) {
                 nombre,
                 apellidos,
                 email: u.email,
-                telefono: u.phone,
+                telefono: u.phone || "+34600000000",
                 fecha_nacimiento: fechaNacimientoAleatoria(i),
                 direccion: `Calle Ficticia de Prueba ${100 + i}, 280${(10 + (i % 90)).toString().padStart(2, "0")} Madrid`,
+                contactoEmergencia: "Familiar Autorizado (600 111 222)",
+                grupoSanguineo: i % 2 === 0 ? "A+" : "0+",
                 notas: i === 0 ? "Paciente adicional sin citas previas." : `Nota de prueba ${i + 1}.`,
-            });
-            perfilesCreados++;
-        }
-
-        if (u.role === "profesional_sanitario") {
-            await firestoreAdmin.collection("profesionales").doc(`seed-prof-extra-${i}`).set({
-                usuario_id: userUid,
-                nombre: u.name,
-                especialidad: ["Medicina General", "Pediatría", "Fisioterapia", "Odontología"][i % 4],
-                numero_colegiado: `C-${10000 + i}`,
-                telefono: u.phone,
-                email: u.email,
-                sedeId: [IDS.sedeNorte, IDS.sedeSur, IDS.sedeCentro][i % 3],
-                servicioId: [IDS.servicioMedicinaGeneral, IDS.servicioPediatria, IDS.servicioFisioterapia, IDS.servicioOdontologia][i % 4],
-            });
+            }, { merge: true });
             perfilesCreados++;
         }
     }
 
-    console.info(`[seed] ${perfilesCreados} perfiles extendidos creados.`);
+    console.info(`[seed] ${perfilesCreados} perfiles extendidos adicionales creados.`);
 }

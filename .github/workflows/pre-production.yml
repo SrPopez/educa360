@@ -45,7 +45,6 @@ jobs:
     name: 2. Publicación en Entorno de Preproducción
     needs: comprobacion-tipos-y-pruebas
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/cambio-1' || github.ref == 'refs/heads/develop'
 
     steps:
       - name: Descargar código del repositorio
@@ -68,10 +67,10 @@ jobs:
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
 
       - name: Desplegar en Firebase Preproducción
-        env:
-          FIREBASE_CLI_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-        run: |
-          npx firebase-tools deploy --only hosting:educa360-dev --token "$FIREBASE_CLI_TOKEN"
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: educa360-dev
+          channelId: live
+          target: educa360-dev

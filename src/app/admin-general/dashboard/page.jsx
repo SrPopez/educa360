@@ -82,6 +82,8 @@ export default function AdminGeneralDashboardPage() {
         );
     }
 
+    const esCancelacion = accionPendiente === "Cancelada";
+
     return (
         <PortalShell
             rolLabel="Administración General"
@@ -194,7 +196,7 @@ export default function AdminGeneralDashboardPage() {
                                                             {(esPendiente || !esAceptada) && (
                                                                 <button
                                                                     onClick={() => solicitarConfirmacion(cita, "Aceptada")}
-                                                                    className="px-2.5 py-1.5 bg-[#009688] hover:bg-[#00796b] text-white font-semibold text-[11px] rounded-lg shadow-xs transition cursor-pointer"
+                                                                    className="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] rounded-lg shadow-xs transition cursor-pointer"
                                                                 >
                                                                     Aceptar
                                                                 </button>
@@ -218,16 +220,18 @@ export default function AdminGeneralDashboardPage() {
                 </Tarjeta>
 
                 {modalAbierto && citaSeleccionada && (
-                    <div className="fixed inset-0 bg-[#090d16]/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                        <div className="bg-[#f8fafc] rounded-[28px] shadow-2xl border border-slate-100 max-w-[440px] w-full p-8 sm:p-10 space-y-6 text-center relative z-10">
+                    <div className="fixed inset-0 bg-[#090d16]/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                        <div className={`bg-white rounded-[28px] shadow-2xl border max-w-[440px] w-full p-8 sm:p-10 space-y-6 text-center relative z-10 ${
+                            esCancelacion ? "border-rose-100" : "border-teal-100"
+                        }`}>
                             
-                            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center border shadow-xs shrink-0 ${
-                                accionPendiente === "Cancelada" 
-                                    ? "bg-rose-50 text-rose-600 border-rose-100" 
-                                    : "bg-teal-50 text-[#009688] border-teal-100"
+                            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center border shadow-sm shrink-0 ${
+                                esCancelacion 
+                                    ? "bg-rose-50 text-rose-600 border-rose-200" 
+                                    : "bg-teal-50 text-teal-600 border-teal-200"
                             }`}>
                                 <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    {accionPendiente === "Cancelada" ? (
+                                    {esCancelacion ? (
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     ) : (
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -236,30 +240,48 @@ export default function AdminGeneralDashboardPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                                    {accionPendiente === "Cancelada" ? "¿Desea cancelar esta cita médica?" : "¿Desea aceptar esta cita médica?"}
+                                <span className={`inline-block text-[10px] font-mono uppercase tracking-wider px-3 py-0.5 rounded-md font-bold border ${
+                                    esCancelacion
+                                        ? "text-rose-700 bg-rose-50 border-rose-200"
+                                        : "text-teal-700 bg-teal-50 border-teal-200"
+                                }`}>
+                                    {esCancelacion ? "Acción Crítica · Registro Institucional" : "Validación Administrativa"}
+                                </span>
+                                <h3 className="text-lg font-bold text-slate-900 tracking-tight pt-1">
+                                    {esCancelacion ? "¿Desea cancelar esta cita médica?" : "¿Desea aceptar esta cita médica?"}
                                 </h3>
                                 <p className="text-xs text-slate-500 leading-relaxed px-2">
-                                    Está a punto de modificar la cita del paciente <strong className="text-slate-700">{citaSeleccionada.userEmail}</strong> programada para el <strong className="text-slate-700">{citaSeleccionada.fecha}</strong> a las <strong className="text-slate-700">{citaSeleccionada.hora}</strong>.
+                                    Está a punto de {esCancelacion ? "cancelar" : "validar y confirmar"} la cita del paciente <strong className="text-slate-800">{citaSeleccionada.userEmail}</strong> ({citaSeleccionada.especialidad}) programada para el <strong className="text-slate-800">{citaSeleccionada.fecha}</strong> a las <strong className="text-slate-800">{citaSeleccionada.hora}</strong>.
+                                </p>
+                                <p className={`text-[11px] font-medium pt-1 ${
+                                    esCancelacion ? "text-rose-600/90" : "text-teal-700/90"
+                                }`}>
+                                    {esCancelacion 
+                                        ? "Esta acción quedará registrada en la auditoría y bloqueará la consulta." 
+                                        : "La consulta pasará a estar activa en la agenda del facultativo asignado."}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 pt-2">
                                 <button
-                                    onClick={() => setModalAbierto(false)}
-                                    className="w-full py-3.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200/80 shadow-xs cursor-pointer"
+                                    onClick={() => {
+                                        setModalAbierto(false);
+                                        setCitaSeleccionada(null);
+                                        setAccionPendiente(null);
+                                    }}
+                                    className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200/80 shadow-xs cursor-pointer"
                                 >
                                     Volver
                                 </button>
                                 <button
                                     onClick={confirmarAccion}
                                     className={`w-full py-3.5 text-white font-bold text-xs rounded-xl shadow-lg transition cursor-pointer ${
-                                        accionPendiente === "Cancelada"
+                                        esCancelacion
                                             ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/25"
-                                            : "bg-[#009688] hover:bg-[#00796b] shadow-teal-700/25"
+                                            : "bg-teal-600 hover:bg-teal-700 shadow-teal-600/25"
                                     }`}
                                 >
-                                    {accionPendiente === "Cancelada" ? "Sí, cancelar" : "Sí, aceptar"}
+                                    {esCancelacion ? "Sí, cancelar cita" : "Sí, aceptar cita"}
                                 </button>
                             </div>
                         </div>
